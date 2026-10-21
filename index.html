@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🚗 Vehicle RC Extractor</title>
+  <!-- SheetJS for reading and exporting Excel (.xlsx) files -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0e1117;
+      --card-bg: #1a1c24;
+      --border-color: #2d313e;
+      --text-main: #fafafa;
+      --text-muted: #a6a6a6;
+      --accent: #ff4b4b;
+      --accent-hover: #ff3333;
+      --blue: #1c83e1;
+      --green: #21c354;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 2rem;
+      padding-bottom: 130px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+      border-left: 4px solid;
+    }
+
+    .alert-info {
+      background-color: rgba(28, 131, 225, 0.15);
+      border-color: var(--blue);
+    }
+
+    .alert-success {
+      background-color: rgba(33, 195, 84, 0.15);
+      border-color: var(--green);
+    }
+
+    .alert-error {
+      background-color: rgba(255, 75, 75, 0.15);
+      border-color: var(--accent);
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step-box {
+      background: #13161d;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+    }
+
+    .badge-green { background: rgba(33, 195, 84, 0.2); color: #4ade80; }
+    .badge-blue { background: rgba(28, 131, 225, 0.2); color: #60a5fa; }
+
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background: #13161d;
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+    }
+
+    button.secondary {
+      background-color: #2b303c;
+    }
+
+    button.secondary:hover:not(:disabled) {
+      background-color: #3a4050;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .progress-container {
+      width: 100%;
+      background-color: #262730;
+      border-radius: 6px;
+      height: 10px;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background-color: #13161d;
+      color: var(--text-muted);
+    }
+
+    pre {
+      background: #0b0d12;
+      border: 1px solid var(--border-color);
+      padding: 0.75rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      color: #9cdcfe;
+      margin-top: 0.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .footer {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      background-color: #0e1117;
+      border-top: 1px solid var(--border-color);
+      color: #a6a6a6;
+      text-align: center;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.6;
+      z-index: 999;
+    }
+
+    .footer a {
+      color: #4da6ff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚗 Vehicle RC Extractor</h1>
+  <div class="subtitle">This app helps you extract vehicle details from third-party sources</div>
+
+  <div class="alert alert-info">
+    🔍 <strong>Target Website:</strong> vehicleinfo.app<br>
+    💡 <strong>Single Login Quota:</strong> You need to log in once with your phone number (OTP) to extract <strong>10 vehicle details</strong> in a single batch.
+  </div>
+
+  <!-- FILE UPLOAD -->
+  <div class="card">
+    <label><strong>📂 Upload Excel (must have 'RegNumber' column and max 10 rows per mobile login)</strong></label>
+    <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    <div id="fileMessage" style="margin-top: 1rem;"></div>
+  </div>
+
+  <!-- WORKFLOW SECTION -->
+  <div id="workflowSection" class="card hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+      <h3>Batch Extraction Controls (1 Mobile Login = <span id="vehicleCountBadge">0</span>/10 Vehicles)</h3>
+      <span id="bridgeStatusBadge" class="badge badge-blue">Checking Auto-Bridge...</span>
+    </div>
+
+    <!-- STEP 1: LAUNCH & MOBILE LOGIN -->
+    <div class="step-box">
+      <h4>Step 1: Launch Browser Tab &amp; Log In Once with Mobile Number</h4>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.35rem;">
+        Click below to open <code>vehicleinfo.app</code>. Log in with your phone number and OTP, and solve any initial CAPTCHA. Keep that tab open.
+      </p>
+      <button id="launchBtn" onclick="launchLoginTab()">
+        Step 1: Launch Browser &amp; Log In
+      </button>
+    </div>
+
+    <!-- STEP 2: START 10-VEHICLE EXTRACTION -->
+    <div id="step2Box" class="step-box hidden">
+      <div class="alert alert-success" style="margin-bottom: 1rem;">
+        ✅ <strong>Browser Tab Launched!</strong> Log in with your mobile number on <code>vehicleinfo.app</code> first, then start the 10-vehicle batch below.
+      </div>
+
+      <h4>Step 2: Run 10-Vehicle Extraction Under Single Login</h4>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.35rem;">
+        Choose how to execute the 10-vehicle loop inside your logged-in session:
+      </p>
+
+      <div style="margin-top: 0.75rem;">
+        <button id="startAutoBtn" onclick="startBatchExtraction()">
+          Logged in successfully!! → Step 2: Start Automatic Extraction (All Vehicles)
+        </button>
+        <button class="secondary" onclick="toggleZeroInstallBox()">
+          ⚡ No Extension? Use 1-Paste Batch Runner (All 10 Vehicles at Once)
+        </button>
+        <button class="secondary" onclick="downloadUserscript()">
+          🧩 Get 1-Time Auto-Pilot Userscript (.user.js)
+        </button>
+      </div>
+
+      <!-- ZERO-INSTALL 1-PASTE BATCH RUNNER -->
+      <div id="zeroInstallBox" class="hidden" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+          <strong>How to extract all 10 vehicles with 1 mobile login (Zero Extension Install):</strong>
+        </p>
+        <ol style="margin-left: 1.25rem; margin-top: 0.4rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+          <li>Make sure you are logged in with your phone number on the <code>vehicleinfo.app</code> tab opened in Step 1.</li>
+          <li>Click <strong>Copy 10-Vehicle Batch Script</strong> below.</li>
+          <li>Switch to the <code>vehicleinfo.app</code> tab, press <code>F12</code> (or <code>Ctrl+Shift+J</code>) to open the Console, paste (<code>Ctrl+V</code>), and press <code>Enter</code>.</li>
+          <li>It will automatically fetch all 10 vehicles inside your logged-in session (with a 3–5s human delay), stream every row back to this dashboard, and download your Excel file!</li>
+        </ol>
+        <button onclick="copyBatchConsoleScript()">📋 Copy 10-Vehicle Batch Script</button>
+      </div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div id="progressSection" class="hidden" style="margin-top: 1.5rem;">
+      <div id="statusText" style="font-weight: 600;">Ready...</div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE PREVIEW & DOWNLOAD -->
+  <div id="resultsSection" class="card hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+      <h3>Live Preview (Last 3 Vehicles)</h3>
+      <button id="downloadBtn" class="hidden" onclick="downloadExcel()">📥 Download Results (vehicle_rc_details.xlsx)</button>
+    </div>
+    <div class="table-wrapper" id="tableContainer"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    ©2026 Dashboard developed by <b>Kounik De Sarkar</b><br>
+    🌐 <a href="https://sites.google.com/view/kounik" target="_blank">Homepage</a><br>
+    <i>Mentors: Prof. Harish C. Phuleria &amp; Prof. Arnab Jana</i>
+  </div>
+
+  <script>
+    let uploadedRows = [];
+    let regColName = null;
+    let results = [];
+    let targetWin = null;
+    let currentIdx = 0;
+    let isRunningBatch = false;
+
+    // Exact Field Map from Python script
+    const FIELD_MAP = {
+      "Owner Name": ["Owner Name"],
+      "Maker Name": ["Maker Name"],
+      "Model Name": ["Model Name"],
+      "Variant Name": ["Variant Name"],
+      "Vehicle Class": ["Vehicle Class"],
+      "Fuel Type": ["Fuel Type"],
+      "Fuel Norms": ["Fuel Norms"],
+      "Engine Number": ["Engine Number"],
+      "Chassis Number": ["Chassis Number"],
+      "Registration Authority": ["Registration Authority"],
+      "Registration Date": ["Registration Date"],
+      "Vehicle Age": ["Vehicle Age"],
+      "Insurance Expiry": ["Insurance Valid UpTo", "Expired On"],
+      "Insurance Company": ["Insurance Company"],
+      "Pollution Upto": ["Pollution Upto"],
+      "RC Status": ["RC Status"]
+    };
+
+    const ALL_LABELS_LOWER = Object.values(FIELD_MAP).flat().map(l => l.toLowerCase());
+
+    // Check if Companion Userscript is active
+    window.addEventListener("DOMContentLoaded", () => {
+      setTimeout(() => {
+        const badge = document.getElementById("bridgeStatusBadge");
+        if (window.__RC_EXTRACTOR_BRIDGE_ACTIVE__) {
+          badge.className = "badge badge-green";
+          badge.textContent = "✅ Auto-Pilot Bridge Active";
+        } else {
+          badge.className = "badge badge-blue";
+          badge.textContent = "⚡ 1-Paste Console / Userscript Mode";
+        }
+      }, 600);
+    });
+
+    // Listen for scraped vehicle data coming back from the logged-in vehicleinfo.app tab
+    window.addEventListener("message", (event) => {
+      const msg = event.data;
+      if (!msg || typeof msg !== "object") return;
+
+      if (msg.type === "RC_SINGLE_VEHICLE_RAW" && isRunningBatch) {
+        handleScrapedVehicle(msg.plate, msg.bodyText, msg.headers || []);
+      } else if (msg.type === "RC_BATCH_ITEM_RAW") {
+        // From the 1-Paste Batch Runner
+        const row = uploadedRows[msg.index] || {};
+        const parsed = parseVehicleDetails(msg.bodyText, msg.plate, msg.headers || []);
+        results.push({ ...row, ...parsed });
+        document.getElementById("progressSection").classList.remove("hidden");
+        document.getElementById("resultsSection").classList.remove("hidden");
+        updateProgress((msg.index + 1) / uploadedRows.length, `Processed (${msg.index + 1}/${uploadedRows.length}): ${msg.plate}`);
+        renderPreviewTable();
+        if (msg.index + 1 >= uploadedRows.length) {
+          finishBatch();
+        }
+      }
+    });
+
+    // 1. Read & Validate Uploaded Excel (Max 10 Rows per Mobile Login)
+    document.getElementById("excelFile").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      const msgBox = document.getElementById("fileMessage");
+      document.getElementById("workflowSection").classList.add("hidden");
+      document.getElementById("resultsSection").classList.add("hidden");
+
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+          if (jsonData.length === 0) {
+            msgBox.innerHTML = `<div class="alert alert-error">❌ Excel file is empty.</div>`;
+            return;
+          }
+
+          if (jsonData.length > 10) {
+            msgBox.innerHTML = `<div class="alert alert-error">❌ You can only process up to 10 vehicles at a time due to single mobile login website limitations (Found ${jsonData.length} rows).</div>`;
+            return;
+          }
+
+          const cols = Object.keys(jsonData[0]);
+          regColName = cols.find(c => ["reg", "vehicle", "plate"].some(k => c.toLowerCase().includes(k)));
+
+          if (!regColName) {
+            msgBox.innerHTML = `<div class="alert alert-error">❌ No column found matching 'RegNumber'. Please rename your Excel column.</div>`;
+            return;
+          }
+
+          uploadedRows = jsonData;
+          document.getElementById("vehicleCountBadge").textContent = uploadedRows.length;
+          msgBox.innerHTML = `<div class="alert alert-success">Found <strong>${uploadedRows.length}</strong> vehicles to process under 1 mobile login.</div>`;
+          document.getElementById("workflowSection").classList.remove("hidden");
+        } catch (err) {
+          msgBox.innerHTML = `<div class="alert alert-error">Error reading file: ${err.message}</div>`;
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function cleanPlate(raw) {
+      if (!raw) return "";
+      return String(raw).trim().replace(/[\s-]/g, "").toUpperCase();
+    }
+
+    // 2. Value-Above-Label Scraper Logic (Ported directly from your Python script)
+    function parseVehicleDetails(bodyText, plateNumber, headerTexts = []) {
+      const data = {
+        "RegNumber": plateNumber,
+        "Status": "Success",
+        "Owner Name": "NA",
+        "Maker Name": "NA",
+        "Model Name": "NA",
+        "Variant Name": "NA",
+        "Vehicle Class": "NA",
+        "Fuel Type": "NA",
+        "Fuel Norms": "NA",
+        "Engine Number": "NA",
+        "Chassis Number": "NA",
+        "Registration Authority": "NA",
+        "Registration Date": "NA",
+        "Vehicle Age": "NA",
+        "Insurance Expiry": "NA",
+        "Insurance Company": "NA",
+        "Pollution Upto": "NA",
+        "RC Status": "NA"
+      };
+
+      if (!bodyText || bodyText.startsWith("ERROR:")) {
+        data["Status"] = bodyText || "Error";
+        return data;
+      }
+
+      const lowerSrc = bodyText.toLowerCase();
+      if (lowerSrc.includes("no record found") || lowerSrc.includes("invalid rc")) {
+        data["Status"] = "Not Found";
+        return data;
+      }
+
+      const lines = bodyText
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      function findValueAboveLabel(labelList) {
+        for (let i = 0; i < lines.length; i++) {
+          const lineLower = lines[i].toLowerCase();
+          for (const label of labelList) {
+            const target = label.toLowerCase();
+            if (lineLower === target || lineLower.startsWith(target)) {
+              if (i > 0) {
+                const candidate = lines[i - 1];
+                // Prevent grabbing another label if the field was blank
+                if (!ALL_LABELS_LOWER.includes(candidate.toLowerCase())) {
+                  return candidate;
+                }
+              }
+            }
+          }
+        }
+        return "NA";
+      }
+
+      for (const [key, labels] of Object.entries(FIELD_MAP)) {
+        const val = findValueAboveLabel(labels);
+        if (val && val !== "NA") {
+          data[key] = val;
+        }
+      }
+
+      // Header Fallback (If Make/Model not found in grid)
+      if (data["Maker Name"] === "NA" && headerTexts.length > 0) {
+        for (const txt of headerTexts) {
+          if (txt.length > 4 && !txt.includes(plateNumber) && !txt.includes("Details")) {
+            data["Maker Name"] = txt;
+            break;
+          }
+        }
+      }
+
+      return data;
+    }
+
+    // STEP 1: Open vehicleinfo.app for single mobile login
+    function launchLoginTab() {
+      targetWin = window.open("https://vehicleinfo.app/", "VehicleInfoExtractorTab");
+      document.getElementById("step2Box").classList.remove("hidden");
+    }
+
+    function toggleZeroInstallBox() {
+      document.getElementById("zeroInstallBox").classList.toggle("hidden");
+    }
+
+    // STEP 2A: Automatic Multi-Vehicle Loop (With Userscript Bridge)
+    function startBatchExtraction() {
+      if (!window.__RC_EXTRACTOR_BRIDGE_ACTIVE__) {
+        document.getElementById("zeroInstallBox").classList.remove("hidden");
+        alert(
+          "To run 1-click hands-free extraction across tabs, either:\n\n" +
+          "1. Click 'Copy 10-Vehicle Batch Script' below and paste it once in the vehicleinfo.app Console (Zero Install), OR\n" +
+          "2. Install the 1-Time Auto-Pilot Userscript."
+        );
+        return;
+      }
+
+      results = [];
+      currentIdx = 0;
+      isRunningBatch = true;
+      document.getElementById("progressSection").classList.remove("hidden");
+      document.getElementById("resultsSection").classList.remove("hidden");
+      document.getElementById("downloadBtn").classList.add("hidden");
+
+      processNextVehicleInTab();
+    }
+
+    function processNextVehicleInTab() {
+      while (currentIdx < uploadedRows.length) {
+        const raw = uploadedRows[currentIdx][regColName];
+        const reg = cleanPlate(raw);
+        if (reg && reg.toLowerCase() !== "nan") {
+          updateProgress(currentIdx / uploadedRows.length, `Processing (${currentIdx + 1}/${uploadedRows.length}): ${reg}...`);
+          const url = `https://vehicleinfo.app/rc-details/${reg}?rc_no=${reg}#rc_auto_scrape=${reg}`;
+          targetWin = window.open(url, "VehicleInfoExtractorTab");
+          return;
+        }
+        currentIdx++;
+      }
+      finishBatch();
+    }
+
+    function handleScrapedVehicle(plate, bodyText, headers) {
+      const row = uploadedRows[currentIdx] || {};
+      const parsed = parseVehicleDetails(bodyText, plate, headers);
+      results.push({ ...row, ...parsed });
+      renderPreviewTable();
+
+      currentIdx++;
+      updateProgress(currentIdx / uploadedRows.length, `Processed (${currentIdx}/${uploadedRows.length}): ${plate}`);
+
+      if (currentIdx < uploadedRows.length) {
+        // Random 3 to 5 second delay to simulate human behavior (matches random.uniform(3, 5))
+        const delayMs = Math.floor(Math.random() * 2000) + 3000;
+        document.getElementById("statusText").textContent = `Waiting ${(delayMs / 1000).toFixed(1)}s before next vehicle (${currentIdx + 1}/${uploadedRows.length})...`;
+        setTimeout(() => {
+          processNextVehicleInTab();
+        }, delayMs);
+      } else {
+        if (targetWin && !targetWin.closed) {
+          targetWin.close();
+        }
+        finishBatch();
+      }
+    }
+
+    function updateProgress(fraction, text) {
+      document.getElementById("progressBar").style.width = `${Math.round(fraction * 100)}%`;
+      document.getElementById("statusText").textContent = text;
+    }
+
+    function finishBatch() {
+      isRunningBatch = false;
+      updateProgress(1, "🎉 Processing Finished! All vehicles extracted under your single mobile login.");
+      document.getElementById("downloadBtn").classList.remove("hidden");
+      downloadExcel();
+    }
+
+    function renderPreviewTable() {
+      const container = document.getElementById("tableContainer");
+      if (results.length === 0) {
+        container.innerHTML = "";
+        return;
+      }
+      const previewRows = results.slice(-3);
+      const cols = Object.keys(previewRows[0]);
+
+      let html = `<table><thead><tr>`;
+      cols.forEach(c => { html += `<th>${c}</th>`; });
+      html += `</tr></thead><tbody>`;
+
+      previewRows.forEach(r => {
+        html += `<tr>`;
+        cols.forEach(c => { html += `<td>${r[c] !== undefined ? r[c] : ""}</td>`; });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    function downloadExcel() {
+      if (results.length === 0) return;
+      const ws = XLSX.utils.json_to_sheet(results);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Vehicle_RC_Details");
+      XLSX.writeFile(wb, "vehicle_rc_details.xlsx");
+    }
+
+    // STEP 2B: Generate Zero-Install 1-Paste Console Script that fetches all 10 vehicles inside the logged-in session
+    function copyBatchConsoleScript() {
+      const plates = uploadedRows.map((r, idx) => ({
+        index: idx,
+        plate: cleanPlate(r[regColName])
+      })).filter(item => item.plate && item.plate.toLowerCase() !== "nan");
+
+      const script = `(async function() {
+  const queue = ${JSON.stringify(plates)};
+  console.log("🚗 Starting Single-Login Batch Extraction for " + queue.length + " vehicles...");
+  
+  // Create floating status overlay on vehicleinfo.app
+  const banner = document.createElement("div");
+  banner.style = "position:fixed;top:15px;right:15px;z-index:999999;background:#0e1117;color:#fff;padding:16px 20px;border:2px solid #ff4b4b;border-radius:10px;font-family:sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.5);";
+  document.body.appendChild(banner);
+
+  // Create hidden same-origin iframe that shares your mobile login cookies
+  const iframe = document.createElement("iframe");
+  iframe.style = "width:1024px;height:800px;position:fixed;left:-9999px;top:0;opacity:0;";
+  document.body.appendChild(iframe);
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  for (let k = 0; k < queue.length; k++) {
+    const { index, plate } = queue[k];
+    banner.innerHTML = "<b>🚗 Extracting (" + (k + 1) + "/" + queue.length + "): " + plate + "</b><br><small style='color:#a6a6a6'>Using your active mobile login session...</small>";
+    
+    iframe.src = "https://vehicleinfo.app/rc-details/" + plate + "?rc_no=" + plate;
+
+    // Wait up to 15s for 'Owner Name' or 'Registration Date' (same as Selenium WebDriverWait)
+    let bodyText = "";
+    let headers = [];
+    const start = Date.now();
+    while (Date.now() - start < 15000) {
+      await sleep(700);
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        if (doc && doc.body) {
+          const txt = doc.body.innerText || "";
+          if (txt.includes("Owner Name") || txt.includes("Registration Date") || txt.toLowerCase().includes("no record found") || txt.toLowerCase().includes("invalid")) {
+            iframe.contentWindow.scrollTo(0, doc.body.scrollHeight);
+            await sleep(2000);
+            bodyText = doc.body.innerText;
+            headers = Array.from(doc.querySelectorAll("h1, h2")).map(h => h.innerText.trim());
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!bodyText) {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        bodyText = doc && doc.body ? doc.body.innerText : "ERROR: Timeout loading vehicle";
+      } catch (e) {
+        bodyText = "ERROR: " + e.message;
+      }
+    }
+
+    if (window.opener) {
+      window.opener.postMessage({
+        type: "RC_BATCH_ITEM_RAW",
+        index: index,
+        plate: plate,
+        bodyText: bodyText,
+        headers: headers
+      }, "*");
+    }
+
+    if (k < queue.length - 1) {
+      const delay = Math.floor(Math.random() * 2000) + 3000;
+      banner.innerHTML = "✅ Extracted <b>" + plate + "</b><br><small style='color:#a6a6a6'>Waiting " + (delay/1000).toFixed(1) + "s (human delay)...</small>";
+      await sleep(delay);
+    }
+  }
+
+  banner.innerHTML = "🎉 <b>All " + queue.length + " Vehicles Extracted!</b><br><small style='color:#4ade80'>Check your Vehicle RC Extractor dashboard tab for the Excel download.</small>";
+  setTimeout(() => { iframe.remove(); }, 2000);
+})();`;
+
+      navigator.clipboard.writeText(script).then(() => {
+        alert("✅ Copied 10-Vehicle Batch Script!\n\nNow switch to your logged-in vehicleinfo.app tab, press F12 (Console), paste (Ctrl+V), and press Enter.");
+      });
+    }
+
+    // Download 1-Time Tampermonkey Companion Userscript for 100% Hands-Free Operation
+    function downloadUserscript() {
+      const userscriptCode = `// ==UserScript==
+// @name         Vehicle RC Extractor Auto-Pilot Bridge
+// @namespace    https://sites.google.com/view/kounik
+// @version      1.0
+// @description  Bridges your GitHub Pages RC Extractor with vehicleinfo.app so 1 mobile login extracts 10 vehicles automatically.
+// @match        *://*.github.io/*
+// @match        *://localhost:*/*
+// @match        *://127.0.0.1:*/*
+// @match        *://vehicleinfo.app/*
+// @match        *://*.vehicleinfo.app/*
+// @run-at       document-end
+// @grant        none
+// ==/UserScript==
+
+(function() {
+  'use strict';
+
+  // 1. Mark bridge active on the GitHub Pages dashboard
+  if (!location.hostname.includes('vehicleinfo.app')) {
+    window.__RC_EXTRACTOR_BRIDGE_ACTIVE__ = true;
+    return;
+  }
+
+  // 2. On vehicleinfo.app, check if opened by the auto-extractor
+  const hash = location.hash || '';
+  if (!hash.includes('rc_auto_scrape=')) return;
+
+  const plate = decodeURIComponent(hash.split('rc_auto_scrape=')[1].split('&')[0]);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  (async function waitAndScrape() {
+    const start = Date.now();
+    while (Date.now() - start < 15000) {
+      const txt = document.body ? document.body.innerText : '';
+      if (
+        txt.includes('Owner Name') ||
+        txt.includes('Registration Date') ||
+        txt.toLowerCase().includes('no record found') ||
+        txt.toLowerCase().includes('invalid')
+      ) {
+        break;
+      }
+      await sleep(600);
+    }
+
+    window.scrollTo(0, document.body.scrollHeight);
+    await sleep(2000);
+
+    const bodyText = document.body ? document.body.innerText : '';
+    const headers = Array.from(document.querySelectorAll('h1, h2')).map(h => h.innerText.trim());
+
+    if (window.opener) {
+      window.opener.postMessage({
+        type: 'RC_SINGLE_VEHICLE_RAW',
+        plate: plate,
+        bodyText: bodyText,
+        headers: headers
+      }, '*');
+    }
+  })();
+})();`;
+
+      const blob = new Blob([userscriptCode], { type: "application/javascript" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "vehicle_rc_autopilot.user.js";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
